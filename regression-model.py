@@ -88,9 +88,12 @@ for r in range(R):
     x_axis = np.linspace(0,40,500)
     y_axis = np.linspace(0,750,500)
     plt.show()
+    #Consigo printar o treinamento
+    
 
     '''
-
+    PARTE QUE NÃO ESTÁ FUNCIONANDO!
+    A DIMENSÃO DAS MATRIZES QUE SE MULTIPLICAM TÁ ERRADA
 
     X_map,Y_map = np.meshgrid(x_axis,y_axis)
     X_map.shape = (500,500,1)
