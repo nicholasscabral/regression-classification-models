@@ -59,7 +59,10 @@ for r in range(R):
 
     #Treinamento dos modelos  
     b_media = np.mean(y_treino)
-    b_media = np.array([[b_media],[0]])
+    b_media = np.array([
+        [b_media],
+        [0],
+    ])
 
 
     b_OLS_S = np.linalg.pinv(X_treino.T@X_treino)@X_treino.T@y_treino #modelo
@@ -69,30 +72,6 @@ for r in range(R):
     ones = np.ones((X_treino.shape[0],1))
     X_treino = np.concatenate((ones,X_treino),axis=1)
     b_OLS_C = np.linalg.pinv(X_treino.T@X_treino)@X_treino.T@y_treino #modelo com interceptor
-
-    if plotarGraficos:
-
-        '''
-            PARA CONSTRUIR O GRÁFICO DE CADA ITERAÇÃO
-            fig = plt.figure()
-            ax = fig.add_subplot()
-            ax.scatter(X_treino[:,1],y_treino[:,0],color='purple',edgecolors='k')
-            plt.show()
-        '''
-        
-        x_axis = np.linspace(0,40,500)
-        y_axis = np.linspace(0,750,500)
-
-        X_map,Y_map = np.meshgrid(x_axis,y_axis)
-        X_map.shape = (500,500,1)
-        Y_map.shape = (500,500,1)
-        ones_map = np.ones((500,500,1))
-
-        X3D = np.concatenate((ones_map,X_map,Y_map),axis=1)
-
-        Z_media = X3D@b_media.T
-        Z_ols_s = X3D@b_OLS_S.T
-        Z_ols_c = X3D@b_OLS_C.T
         
 
     #Teste dos modelos, produzindo medida de erro/acerto 
