@@ -14,7 +14,6 @@ y = Data[0:,1]
 fig = plt.figure()
 ax = fig.add_subplot()
 ax.scatter(X, y, color='red',edgecolors='k')
-#plt.show()
 
 # ORGANIZAR OS DADOS
 
@@ -23,37 +22,33 @@ X = X.reshape(N, 1)
 y = y.reshape(N, 1)
 
 
-# LISTAS DE DESEMPENHO POR RODADA
+# DEFININDO MODELOS
+modelos = ['MQO Tradicional', 'Média Observável', 'MQO Regularizado']
 
-MSE_MQOTradicional =[]
+# LISTAS DE DESEMPENHO POR RODADA (Erros quadraticos por modelo)
 
-MSE_Media =[]
-
-MSE_Ridge = []
+MSE_MQO_Tradicional = [] # Minimo de erros por rodada utilizando MQO Tradicional
+MSE_MQO_Regularizado = [] # Minimo de erros por rodada utilizando MQO Regularizado
+MSE_Media_Observavel = [] # Minimo de erros por rodada utilizando Media de valores oberservaveis
 
 # DEFININDO RODADAS
 
 R = 1000
+alphas = np.logspace(0.001, 1.0) # Logaritimo pequeno para amostra pequena, precisamos de um range pequeno para maior precisão do modelo
 
-
-# Range of alpha values to search
-alphas = np.logspace(0.001, 1.0)  # You can adjust the range as needed
-
-# Dictionary to store the MSE for each alpha
+# Armazena erro quadratico para cada alpha (Apenas para o MQO Regularizado)
 mse_dict = {}
-
 for alpha in alphas:
-    mse_list = []  # Store MSE values for each round
+    mse_list = []  # Armazena o erro quadratico para cada rodada
 
     for r in range(R):
-        
         # EMBARALHAR AS AMOSTRAS
 
         amostra_embaralhada = np.random.permutation(N)
         X_random = X[amostra_embaralhada,:]
         y_random = y[amostra_embaralhada,:]
 
-        #DIVIDIR TESTE E TREINO (EM X E Y) NA PROPORÇÃO 20-80
+        # DIVIDIR TESTE E TREINO (EM X E Y) NA PROPORÇÃO 80-20
 
         X_treino = X_random[0:int(N*.8),:]  
         y_treino = y_random[0:int(N*.8),:]  
@@ -66,28 +61,27 @@ for alpha in alphas:
         
         y_pred_ridge = X_teste@ridge_model
 
-        MSE_Ridge.append(np.mean((y_teste - y_pred_ridge) ** 2))
+        MSE_MQO_Regularizado.append(np.mean((y_teste - y_pred_ridge) ** 2))
     
-    # Store the average MSE for this alpha
+    # Armazena a media de erro quadratico para esse alpha
     mse_dict[alpha] = np.mean(mse_list)
 
-# Find the alpha with the minimum MSE
+# Encontra o alpha com menor erro quadratico
+# Para utilizar na implementação do MQO Regularizado
 best_alpha = min(mse_dict)
 min_mse = mse_dict[best_alpha]
 
 print(best_alpha)
 print(min_mse)
 
-
 for r in range(R):
-        
         # EMBARALHAR AS AMOSTRAS
 
         amostra_embaralhada = np.random.permutation(N)
         X_random = X[amostra_embaralhada,:]
         y_random = y[amostra_embaralhada,:]
 
-        #DIVIDIR TESTE E TREINO (EM X E Y) NA PROPORÇÃO 20-80
+        #DIVIDIR TESTE E TREINO (EM X E Y) NA PROPORÇÃO 80-20
 
         X_treino = X_random[0:int(N*.8),:]  
         y_treino = y_random[0:int(N*.8),:]  
@@ -118,26 +112,62 @@ for r in range(R):
         y_pred_mqo_trad = X_teste@modelo_MQO_trad
         y_pred_ridge = X_teste@ridge_model
 
-        MSE_Media.append(np.mean((y_teste-y_pred_media)**2))
-        MSE_MQOTradicional.append(np.mean((y_teste-y_pred_mqo_trad)**2))
-        MSE_Ridge.append(np.mean((y_teste - y_pred_ridge) ** 2))
+        MSE_Media_Observavel.append(np.mean((y_teste-y_pred_media)**2))
+        MSE_MQO_Tradicional.append(np.mean((y_teste-y_pred_mqo_trad)**2))
+        MSE_MQO_Regularizado.append(np.mean((y_teste - y_pred_ridge) ** 2))
 
-boxplot = [MSE_Media,MSE_MQOTradicional, MSE_Ridge]
-plt.boxplot(boxplot,labels=['Média','MQO', 'Ridge'])
+boxplot = [MSE_MQO_Tradicional, MSE_Media_Observavel, MSE_MQO_Regularizado]
+plt.boxplot(boxplot,labels=modelos)
 plt.show()
 
-#VALORES COMPUTADOS PARA A MEDIA, DESVIO PADRÃO, MENOR VALOR E MAIOR VALOR DOS MODELOS
-media_MQOTradicional = np.mean(MSE_MQOTradicional)
-media_MediaObservavel = np.mean(MSE_Media)
-media_MQORegularizado = np.mean(MSE_Ridge)
-desviopadrao_MQOTradicional = np.std(MSE_MQOTradicional)
-desviopadrao_Media = np.std(MSE_Media)
-desviopadrao_MQORegularizado = np.std(MSE_Ridge)
-menorvalor_MQOTradicional = min(MSE_MQOTradicional)
-menorvalor_Media = min(MSE_Media)
-menorvalor_MQORegularizado = min(MSE_Ridge)
-maiorvalor_MQOTradicional = max(MSE_MQOTradicional)
-maiorvalor_Media = max(MSE_MQOTradicional)
-maiorvalor_MQOTradicional = max(MSE_MQOTradicional)
+# VALORES COMPUTADOS PARA A MEDIA, DESVIO PADRÃO, MENOR VALOR E MAIOR VALOR DOS MODELOS
+
+# Métricas para o MQO Tradicional
+media_MSE_MQO_Tradicional = np.mean(MSE_MQO_Tradicional)
+desviopadrao_MSE_MQO_Tradicional = np.std(MSE_MQO_Tradicional)
+menorvalor_MSE_MQO_Tradicional = min(MSE_MQO_Tradicional)
+maiorvalor_MSE_MQO_Tradicional = max(MSE_MQO_Tradicional)
+
+# Métricas para a Média Observável
+media_MSE_Media_Observavel = np.mean(MSE_Media_Observavel)
+desviopadrao_MSE_Media_Observavel = np.std(MSE_Media_Observavel)
+menorvalor_MSE_Media_Observavel = min(MSE_Media_Observavel)
+maiorvalor_MSE_Media_Observavel = max(MSE_Media_Observavel)
+
+# Métricas para o MQO Regularizado
+media_MSE_MQO_Regularizado = np.mean(MSE_MQO_Regularizado)
+desviopadrao_MSE_MQO_Regularizado = np.std(MSE_MQO_Regularizado)
+menorvalor_MSE_MQO_Regularizado = min(MSE_MQO_Regularizado)
+maiorvalor_MSE_MQO_Regularizado = max(MSE_MQO_Regularizado)
+
+# Valores para cada métrica
+medias = [media_MSE_MQO_Tradicional, media_MSE_Media_Observavel, media_MSE_MQO_Regularizado]
+desvios_padrao = [desviopadrao_MSE_MQO_Tradicional, desviopadrao_MSE_Media_Observavel, desviopadrao_MSE_MQO_Regularizado]
+menor_valores = [menorvalor_MSE_MQO_Tradicional, menorvalor_MSE_Media_Observavel, menorvalor_MSE_MQO_Regularizado]
+maior_valores = [maiorvalor_MSE_MQO_Tradicional, maiorvalor_MSE_Media_Observavel, maiorvalor_MSE_MQO_Regularizado]
+
+largura_barras = 0.2
+# Posições das barras no eixo x
+posicoes_m1 = np.arange(len(modelos))
+posicoes_m2 = [x + largura_barras for x in posicoes_m1]
+posicoes_m3 = [x + largura_barras for x in posicoes_m2]
+posicoes_m4 = [x + largura_barras for x in posicoes_m3]
+
+# Criar o gráfico de barras
+plt.bar(posicoes_m1, medias, largura_barras, label='Média')
+plt.bar(posicoes_m2, desvios_padrao, largura_barras, label='Desvio Padrão')
+plt.bar(posicoes_m3, menor_valores, largura_barras, label='Menor Valor')
+plt.bar(posicoes_m4, maior_valores, largura_barras, label='Maior Valor')
+
+# Adicionar detalhes ao gráfico
+plt.xlabel('Modelos')
+plt.ylabel('Valores')
+plt.title('Comparação das Métricas para os Modelos')
+plt.xticks(posicoes_m2, modelos)
+plt.legend()
+
+# Mostrar o gráfico
+plt.tight_layout()
+plt.show()
 
 
