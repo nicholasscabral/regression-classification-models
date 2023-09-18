@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.linear_model import Ridge
 
 # Define the DMC classifier function
 def dmc_classifier(X_train, Y_train, X_test):
@@ -35,6 +36,7 @@ R = 100
 accuracies_lr = []  # For linear regression
 accuracies_knn = []  # For k-NN
 accuracies_dmc = []  # For DMC
+accuracies_ridge = [] # For Ridge
 
 for r in range(R):
     s = np.random.permutation(N)
@@ -59,7 +61,7 @@ for r in range(R):
     # Linear Regression
     lb = 0.1
     W_hat = np.linalg.pinv(X_treino.T @ X_treino) @ X_treino.T @ Y_treino
-    
+
 
     Y_hat_lr = X_teste @ W_hat
 
@@ -90,14 +92,28 @@ for r in range(R):
     accuracy_dmc = accuracy_score(discriminante2, Y_hat_dmc)
     accuracies_dmc.append(accuracy_dmc)
 
+    # Ridge Regression
+    ridge = Ridge(alpha=1.0)  # You can adjust the regularization strength (alpha) as needed
+    ridge.fit(X_treino[:, 1:], Y_treino)
+
+    Y_hat_ridge = ridge.predict(X_teste[:, 1:])
+
+    # Calculate accuracy for Ridge Regression
+    discriminante_ridge = np.argmax(Y_hat_ridge, axis=1)
+    accuracy_ridge = accuracy_score(discriminante2, discriminante_ridge)
+    accuracies_ridge.append(accuracy_ridge)
+
 # Visualize the results (accuracy)
 plt.figure(figsize=(8, 6))
 plt.plot(range(1, R + 1), accuracies_lr, label='Linear Regression', marker='o', linestyle='-', color='b')
 plt.plot(range(1, R + 1), accuracies_knn, label='k-NN', marker='o', linestyle='-', color='r')
 plt.plot(range(1, R + 1), accuracies_dmc, label='DMC', marker='o', linestyle='-', color='g')
+plt.plot(range(1, R + 1), accuracies_ridge, label='Ridge Regression', marker='o', linestyle='-', color='y')
 plt.title('Accuracy vs. Iteration')
 plt.xlabel('Iteration')
 plt.ylabel('Accuracy')
 plt.legend()
 plt.grid(True)
 plt.show()
+
+
