@@ -30,18 +30,22 @@ modelos = ['MQO Tradicional', 'Média Observável', 'MQO Regularizado']
 MSE_MQO_Tradicional = [] # Minimo de erros por rodada utilizando MQO Tradicional
 MSE_MQO_Regularizado = [] # Minimo de erros por rodada utilizando MQO Regularizado
 MSE_Media_Observavel = [] # Minimo de erros por rodada utilizando Media de valores oberservaveis
+MSE_MQO_Regularizado_TestesAlpha = [] # Minimo de erros por rodada utilizando MQO Regularizado
 
 # DEFININDO RODADAS
 
 R = 1000
-alphas = np.logspace(0.001, 1.0) # Logaritimo pequeno para amostra pequena, precisamos de um range pequeno para maior precisão do modelo
+alphasValores = np.arange(0.001, 1.0, 0.001) # Logaritimo pequeno para amostra pequena, precisamos de um range pequeno para maior precisão do modelo
 
 # Armazena erro quadratico para cada alpha (Apenas para o MQO Regularizado)
-mse_dict = {}
-for alpha in alphas:
-    mse_list = []  # Armazena o erro quadratico para cada rodada
+mse_mqo_alphas = {}
+for alphaAtual in alphasValores:
+    mse_mqo_alphas_rodadas = []  # Armazena o erro quadratico para cada rodada
 
     for r in range(R):
+
+        #print(alphaAtual)
+
         # EMBARALHAR AS AMOSTRAS
 
         amostra_embaralhada = np.random.permutation(N)
@@ -57,19 +61,19 @@ for alpha in alphas:
         y_teste = y_random[int(N*.8):,:]
 
         XTX = X_treino.T @ X_treino
-        ridge_model = np.linalg.inv(XTX + alpha * np.identity(XTX.shape[0])) @ X_treino.T @ y_treino
+        ridge_model = np.linalg.inv(XTX + alphaAtual * np.identity(XTX.shape[0])) @ X_treino.T @ y_treino
         
         y_pred_ridge = X_teste@ridge_model
 
-        MSE_MQO_Regularizado.append(np.mean((y_teste - y_pred_ridge) ** 2))
+        MSE_MQO_Regularizado_TestesAlpha.append(np.mean((y_teste - y_pred_ridge) ** 2))
     
     # Armazena a media de erro quadratico para esse alpha
-    mse_dict[alpha] = np.mean(mse_list)
+    mse_mqo_alphas[alphaAtual] = np.mean(mse_mqo_alphas_rodadas)
 
 # Encontra o alpha com menor erro quadratico
 # Para utilizar na implementação do MQO Regularizado
-best_alpha = min(mse_dict)
-min_mse = mse_dict[best_alpha]
+best_alpha = min(mse_mqo_alphas)
+min_mse = mse_mqo_alphas[best_alpha]
 
 print(best_alpha)
 print(min_mse)
