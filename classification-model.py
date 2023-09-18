@@ -63,7 +63,6 @@ for r in range(R):
     Y_teste = y_random[int(N*.8):,:]
 
     # Linear Regression
-    lb = 0.1
     W_hat = np.linalg.pinv(X_treino.T @ X_treino) @ X_treino.T @ Y_treino
 
 

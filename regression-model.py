@@ -30,13 +30,13 @@ modelos = ['MQO Tradicional', 'Média Observável', 'MQO Regularizado']
 MSE_MQO_Tradicional = [] # Minimo de erros por rodada utilizando MQO Tradicional
 MSE_MQO_Regularizado = [] # Minimo de erros por rodada utilizando MQO Regularizado
 MSE_Media_Observavel = [] # Minimo de erros por rodada utilizando Media de valores oberservaveis
-MSE_MQO_Regularizado_TestesAlpha = [] # Minimo de erros por rodada utilizando MQO Regularizado
+#MSE_MQO_Regularizado_TestesAlpha = [] # Minimo de erros por rodada utilizando MQO Regularizado
 
 # DEFININDO RODADAS
 
 R = 1000
 alphasValores = np.arange(0.001, 1.0, 0.001) # Logaritimo pequeno para amostra pequena, precisamos de um range pequeno para maior precisão do modelo
-
+alphaMinimo = -1
 # Armazena erro quadratico para cada alpha (Apenas para o MQO Regularizado)
 mse_mqo_alphas = {}
 for alphaAtual in alphasValores:
@@ -65,14 +65,14 @@ for alphaAtual in alphasValores:
         
         y_pred_ridge = X_teste@ridge_model
 
-        MSE_MQO_Regularizado_TestesAlpha.append(np.mean((y_teste - y_pred_ridge) ** 2))
+        mse_mqo_alphas_rodadas.append(np.mean((y_teste - y_pred_ridge) ** 2))
     
     # Armazena a media de erro quadratico para esse alpha
     mse_mqo_alphas[alphaAtual] = np.mean(mse_mqo_alphas_rodadas)
 
 # Encontra o alpha com menor erro quadratico
 # Para utilizar na implementação do MQO Regularizado
-best_alpha = min(mse_mqo_alphas)
+best_alpha = min(mse_mqo_alphas, key=lambda k: mse_mqo_alphas[k])
 min_mse = mse_mqo_alphas[best_alpha]
 
 print(best_alpha)
@@ -131,18 +131,21 @@ media_MSE_MQO_Tradicional = np.mean(MSE_MQO_Tradicional)
 desviopadrao_MSE_MQO_Tradicional = np.std(MSE_MQO_Tradicional)
 menorvalor_MSE_MQO_Tradicional = min(MSE_MQO_Tradicional)
 maiorvalor_MSE_MQO_Tradicional = max(MSE_MQO_Tradicional)
+print(media_MSE_MQO_Tradicional, desviopadrao_MSE_MQO_Tradicional, menorvalor_MSE_MQO_Tradicional, maiorvalor_MSE_MQO_Tradicional)
 
 # Métricas para a Média Observável
 media_MSE_Media_Observavel = np.mean(MSE_Media_Observavel)
 desviopadrao_MSE_Media_Observavel = np.std(MSE_Media_Observavel)
 menorvalor_MSE_Media_Observavel = min(MSE_Media_Observavel)
 maiorvalor_MSE_Media_Observavel = max(MSE_Media_Observavel)
+print(media_MSE_Media_Observavel, desviopadrao_MSE_Media_Observavel, menorvalor_MSE_Media_Observavel, maiorvalor_MSE_Media_Observavel)
 
 # Métricas para o MQO Regularizado
 media_MSE_MQO_Regularizado = np.mean(MSE_MQO_Regularizado)
 desviopadrao_MSE_MQO_Regularizado = np.std(MSE_MQO_Regularizado)
 menorvalor_MSE_MQO_Regularizado = min(MSE_MQO_Regularizado)
 maiorvalor_MSE_MQO_Regularizado = max(MSE_MQO_Regularizado)
+print(media_MSE_MQO_Regularizado, desviopadrao_MSE_MQO_Regularizado, menorvalor_MSE_MQO_Regularizado, maiorvalor_MSE_MQO_Regularizado)
 
 # Valores para cada métrica
 medias = [media_MSE_MQO_Tradicional, media_MSE_Media_Observavel, media_MSE_MQO_Regularizado]
