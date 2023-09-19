@@ -36,7 +36,7 @@ MSE_Media_Observavel = [] # Minimo de erros por rodada utilizando Media de valor
 
 R = 1000
 alphasValores = np.arange(0.001, 1.0, 0.001) # Logaritimo pequeno para amostra pequena, precisamos de um range pequeno para maior precisão do modelo
-alphaMinimo = -1
+
 # Armazena erro quadratico para cada alpha (Apenas para o MQO Regularizado)
 mse_mqo_alphas = {}
 for alphaAtual in alphasValores:
