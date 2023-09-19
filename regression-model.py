@@ -74,7 +74,7 @@ MSE_Media_Observavel = [] # Minimo de erros por rodada utilizando Media de valor
 
 # DEFININDO RODADAS
 
-R = 2
+R = 1000
 
 for r in range(R):
 

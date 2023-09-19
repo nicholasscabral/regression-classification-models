@@ -95,7 +95,7 @@ def accuracy(X_Test, Y_test, model):
 
     return accuracy_model
 
-rounds = 10
+rounds = 100
 
 best_alpha = bestAlpha(rounds, X , Y)
 
@@ -211,3 +211,28 @@ plt.legend()
 # Mostrar o gráfico
 plt.tight_layout()
 plt.show()
+
+# Identificar a expressão correspondente a cada bloco de 10.000 observações
+expressions = ['Neutro', 'Sorrindo', 'Aberto', 'Surpreso', 'Rabugento']
+repeated_expressions = [expression for expression in expressions for _ in range(10000)]
+
+Data['Expressao'] = repeated_expressions
+
+colors = plt.cm.viridis.colors
+
+expression_colors = [
+    colors[i * len(colors) // len(expressions)] for i in range(len(expressions))]
+
+
+# Plotar cada expressão facial separadamente para adicionar legenda
+if(True):
+    for i, expression in enumerate(expressions):
+        expressions_data = Data[Data['Expressao'] == expression]
+        plt.scatter(expressions_data['Sensor1'], expressions_data['Sensor2'],
+                    label=expression, color=[expression_colors[i]])
+
+    plt.xlabel('Sensor1')
+    plt.ylabel('Sensor2')
+    plt.title('Gráfico de Dispersão dos Sensores por Expressão Facial')
+    plt.legend()
+    plt.show()
