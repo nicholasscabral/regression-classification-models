@@ -1,128 +1,14 @@
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
-from sklearn.linear_model import Ridge
-from sklearn.model_selection import KFold
+from sklearn.neighbors import KNeighborsClassifier
 
-# FUNÇÃO CLASSIFICADORA DO CENTROIDE (para cada label)
-def dmc_classifier(X_treino, Y_treino, X_teste):
-    centroides = []
-    for label in np.unique(Y_treino):
-        amostras_rotulo = X_treino[Y_treino == label]
-        centroide = np.mean(amostras_rotulo, axis=0)
-        centroides.append(centroide)
-    centroides = np.array(centroides)
+Data = pd.read_csv('EMG.csv', header=None,names=['Sensor1', 'Sensor2'])
 
-    Y_pred = np.argmin(np.linalg.norm(X_teste[:, np.newaxis] - centroides, axis=2), axis=1)
-    return Y_pred
+X = Data.values
+N,p = X.shape
 
-'''
-def best_k(Data, R, X, Y):
-
-    # Define a range of k values to test
-    k_values = np.arange(1, 10, 2)  # Adjust this list as needed
-
-    # Create a dictionary to store accuracies for each k
-    accuracies_knn_values = {}
-
-    for k in k_values:
-
-        accuracy_knn_rodadas = []  # Armazena acurácia para cada rodada
-
-        for r in range(R):
-
-            s = np.random.permutation(N)
-
-            X = Data[s,:]
-            Y = Y[s,:]
-
-            X = np.concatenate((
-                np.ones((N,1)),X
-            ),axis=1)
-
-            X_treino = X[0:int(N*.8),:]
-            Y_treino = Y[0:int(N*.8),:]
-
-            X_teste = X[int(N*.8):,:]
-            Y_teste = Y[int(N*.8):,:]
-        
-            # k-NN model
-            knn = KNeighborsClassifier(n_neighbors=k)
-            knn.fit(X_treino, np.argmax(Y_treino, axis=1))
-            Y_hat_knn = knn.predict(X_teste)
-
-            # Calculating accuracy for k-NN
-            discriminante_teste = np.argmax(Y_teste, axis=1)
-
-            # Calcular precisão para MQO Regularizado
-            accuracies_knn_teste = accuracy_score(Y_hat_knn, discriminante_teste)
-
-            accuracy_knn_rodadas.append(accuracies_knn_teste)
-        
-        # Armazena a media de acurácia
-        accuracies_knn_values[k] = np.mean(accuracy_knn_rodadas)
-
-    best_k = max(accuracies_knn_values, key=lambda k: accuracies_knn_values[k])
-    return best_k
-
-def best_alpha(Data, R, X, Y):
-
-    alphasValores = np.arange(0.1, 1.1, 0.1) # Logaritimo pequeno para amostra pequena, precisamos de um range pequeno para maior precisão do modelo
-
-    # Armazena erro quadratico para cada alpha (Apenas para o MQO Regularizado)
-    mse_mqo_alphas = {}
-
-    for alphaAtual in alphasValores:
-
-        mse_mqo_alphas_rodadas = []  # Armazena o erro quadratico para cada rodada
-
-        for r in range(R):
-
-            amostra_embaralhada = np.random.permutation(N)
-
-            X = Data[amostra_embaralhada, :]
-            Y = Y[amostra_embaralhada, :]
-
-            # EMBARALHAR AS AMOSTRAS
-
-            X_random = X[amostra_embaralhada,:]
-            y_random = Y[amostra_embaralhada,:]
-
-            # DIVIDIR TESTE E TREINO (EM X E Y) NA PROPORÇÃO 80-20
-
-            X_treino = X_random[0:int(N*.8),:]
-            Y_treino = y_random[0:int(N*.8),:]
-
-            X_teste = X_random[int(N*.8):,:]
-            Y_teste = y_random[int(N*.8):,:]
-
-            ridge = Ridge(alpha=alphaAtual)
-            ridge.fit(X_treino[:, 1:], Y_treino)
-
-            Y_hat_ridge = ridge.predict(X_teste[:, 1:])
-
-            mse_mqo_alphas_rodadas.append(np.mean((Y_teste - Y_hat_ridge) ** 2))
-
-        # Armazena a media de erro quadratico para esse alpha
-        mse_mqo_alphas[alphaAtual] = np.mean(mse_mqo_alphas_rodadas)
-
-    # Encontra o alpha com menor erro quadratico
-    # Para utilizar na implementação do MQO Regularizado
-    best_alpha = min(mse_mqo_alphas, key=lambda k: mse_mqo_alphas[k])
-    min_mse = mse_mqo_alphas[best_alpha]
-
-    return best_alpha
-'''
-
-
-# RECEBER DADOS DE ENTRADA
-Data = np.loadtxt("EMG.csv", delimiter=',')
-N, p = Data.shape
-colors = ['red', 'green', 'purple', 'blue', 'gray']
-
-
-# DEFINIR ROTULOS DE CLASSIFICAÇÃO
 neutro = np.tile(np.array([[1,-1,-1,-1,-1]]),(1000,1)) 
 sorrindo = np.tile(np.array([[-1,1,-1,-1,-1]]),(1000,1)) 
 aberto = np.tile(np.array([[-1,-1,1,-1,-1]]),(1000,1)) 
@@ -130,95 +16,198 @@ surpreso = np.tile(np.array([[-1,-1,-1,1,-1]]),(1000,1))
 rabugento = np.tile(np.array([[-1,-1,-1,-1,1]]),(1000,1)) 
 Y = np.tile(np.concatenate((neutro,sorrindo,aberto,surpreso,rabugento)),(10,1))
 
-# NUMERO DE RODADAS
-R = 100
 
-precisao_mqo_tradicional = []
-precisao_knn = []
-precisao_dmc = []
-precisao_mqo_regularizado = []
+def bestAlpha(rounds, X, Y):
+    # 0 < λ ≤ 1
+    alphaValues =  np.arange(0.1, 1.01, 0.1) 
+    bestAlpha = 1
+    maxValue = -1
 
+    for currentAlpha in alphaValues:
 
-for r in range(R):
+        accuracies_alpha = []
 
-    s = np.random.permutation(N)
+        for round in range(rounds):
+            indexRandom = np.random.permutation(N)
+            indexPercentage = int(N*.8)
 
-    X = Data[s,:]
-    Y = Y[s,:]
+            X_randomize = X[indexRandom,:]
+            Y_randomize = Y[indexRandom,:]
 
-    X = np.concatenate((
-        np.ones((N,1)),X
-    ),axis=1)
+            X_train = X_randomize[0: indexPercentage,:] 
+            Y_train = Y_randomize[0: indexPercentage,:]
+            X_test =  X_randomize[indexPercentage: N,:] 
+            Y_test =  Y_randomize[indexPercentage: N,:]
 
-    X_treino = X[0:int(N*.8),:]
-    Y_treino = Y[0:int(N*.8),:]
+            model_Tikhonov_alpha = np.linalg.inv((X_train.T @ X_train) + currentAlpha * np.identity((X_train.T @ X_train).shape[0]))@ X_train.T @ Y_train
 
-    X_teste = X[int(N*.8):,:]
-    Y_teste = Y[int(N*.8):,:]
+            Y_predict_alpha = X_test @ model_Tikhonov_alpha
 
-    # MODELO MQO TRADICIONAL
+            discriminant_predict_alpha = np.argmax(Y_predict_alpha, axis=1)
+            discriminant_test = np.argmax(Y_test, axis=1)
+            accuracy_Tikhonov_alpha = accuracy_score(discriminant_predict_alpha, discriminant_test)
 
-    # IMPLEMENTAÇÃO
-    W_hat = np.linalg.pinv(X_treino.T@X_treino)@X_treino.T@Y_treino
-    Y_hat = X_teste@W_hat
+            accuracies_alpha.append(accuracy_Tikhonov_alpha)
+        
+        if(np.mean(accuracies_alpha) > maxValue):
+            maxValue = np.mean(accuracies_alpha)
+            best_alpha = currentAlpha
 
-    # PRECISÃO
-    discriminante = np.argmax(Y_hat,axis=1)
-    discriminante2 = np.argmax(Y_teste,axis=1)
+    return best_alpha
 
-    acertos = discriminante==discriminante2
-    contagem_acertos = np.count_nonzero(acertos)/10000
-    precisao_mqo_tradicional.append(contagem_acertos)
+    
+def eucledian_distance(x1, x2):
+    """Eucldian distance"""
+    return np.sqrt(np.sum((x1 - x2) ** 2))
 
-    # ------------------------------
+def knn_classifier(X_train, y_train, X_test, k):
+    y_pred = []
+    for i in range(len(X_test)):
+        print(i)
+        distancies = [eucledian_distance(X_train[j], X_test[i]) for j in range(len(X_train))]
+        index_neighbors = np.argsort(distancies)[:k]
+        neighbors = [y_train[idx] for idx in index_neighbors]
+        
+        # Encontre a classe mais frequente usando a função numpy unique
+        classes, counts = np.unique(neighbors, return_counts=True)
+        frequent_class = classes[np.argmax(counts)]
+        
+        y_pred.append(frequent_class)
+    return np.array(y_pred)
 
-    # MQO Regularizado
+def dmc_classifier(X_train, Y_train, X_test):
+    centroids = []
+    for label in np.unique(Y_train):
+        class_labels = X_train[Y_train == label]
+        centroid = np.mean(class_labels, axis=0)
+        centroids.append(centroid)
+    centroids = np.array(centroids)
 
-    XTX = X_treino.T @ X_treino
-    W_hat_r = np.linalg.pinv(X_treino.T@X_treino + 0.1*np.identity(XTX.shape[0]))@X_treino.T@Y_treino
-    Y_hat_r = X_teste@W_hat_r
+    Y_pred = np.argmin(np.linalg.norm(X_test[:, np.newaxis] - centroids, axis=2), axis=1)
+    return Y_pred
 
-    # Calcular precisão para MQO Regularizado
-    discriminante_ridge = np.argmax(Y_hat_r, axis=1)
-    acertos_ridge = discriminante_ridge==discriminante2
-    contagem_acertos_ridge = np.count_nonzero(acertos_ridge)/10000
-    precisao_mqo_regularizado.append(contagem_acertos_ridge)
+def accuracy(X_Test, Y_test, model):
+    Y_predict = X_Test @ model
 
-    # ------------------------------
+    discriminant_predict = np.argmax(Y_predict, axis=1)
+    discriminant_test = np.argmax(Y_test, axis=1)
+    accuracy_model = accuracy_score(discriminant_predict, discriminant_test)
 
-    # MODELO K-NN (K VIZINHOS MAIS PRÓXIMOS)
+    return accuracy_model
 
-    # IMPLEMENTAÇÃO
+rounds = 10
+
+best_alpha = bestAlpha(rounds, X , Y)
+
+accuracy_OLS_rounds = []
+accuracy_Tikhonov_rounds = []
+accuracy_KNN_rounds = []
+accuracy_KNN_function_rounds = []
+accuracy_DMC_rounds = []
+
+interceptor = np.ones((X.shape[0] , 1)) 
+X = np.concatenate((interceptor , X),axis=1)
+
+for rodada in range(rounds):
+    indexRandom = np.random.permutation(N)
+    indexPercentage = int(N*.8)
+
+    #Embaralhar dados
+    X_randomize = X[indexRandom,:]
+    Y_randomize = Y[indexRandom,:]
+
+    X_train = X_randomize[0: indexPercentage,:] 
+    Y_train = Y_randomize[0: indexPercentage,:]
+    X_test =  X_randomize[indexPercentage: N,:] 
+    Y_test =  Y_randomize[indexPercentage: N,:]
+
+    #OLS Model
+    model_OLS = np.linalg.pinv(X_train.T@X_train)@X_train.T@Y_train
+    accuracy_OLS = accuracy(X_test, Y_test, model_OLS)
+    accuracy_OLS_rounds.append(accuracy_OLS)
+
+    #Tikhonov Model
+    model_Tikhonov = np.linalg.inv((X_train.T @ X_train) + best_alpha * np.identity((X_train.T @ X_train).shape[0]))@ X_train.T @ Y_train
+    accuracy_Tikhonov = accuracy(X_test, Y_test, model_Tikhonov)
+    accuracy_Tikhonov_rounds.append(accuracy_Tikhonov)
+
+    # KNN Model (LIB)
     k = 3
     knn = KNeighborsClassifier(n_neighbors=k)
-    knn.fit(X_treino, Y_treino)
+    knn.fit(X_train, Y_train)
     
-    # PRECISÃO
-    Y_hat_knn = knn.predict(X_teste)
-    accuracy = accuracy_score(Y_teste, Y_hat_knn)
-    precisao_knn.append(accuracy)
+    Y_predict_knn = knn.predict(X_test)
+    accuracy_knn = accuracy_score(Y_test, Y_predict_knn)
+    accuracy_KNN_rounds.append(accuracy_knn)
 
-    # ------------------------------
+    # KNN Model (Function)
+    #y_pred_knn = knn_classifier(X_train, Y_train, X_test, k=3)
+    #accuracy_knn_function = accuracy_score(Y_test, y_pred_knn)
+    #accuracy_KNN_function_rounds.append(accuracy_knn_function)
 
-    # MODELO DMC (DISTÂNCIA AO CENTROIDE)
+    #DMC Model
+    dmc = dmc_classifier(X_train, np.argmax(Y_train, axis=1), X_test)
+    discriminant_test = np.argmax(Y_test,axis=1)
+    accuracy_dmc = accuracy_score(dmc, discriminant_test)
+    accuracy_DMC_rounds.append(accuracy_dmc)
 
-    # IMPLEMENTAÇÃO
-    dmc = dmc_classifier(X_treino, np.argmax(Y_treino, axis=1), X_teste)
+# Accuracy for OLS
+mean_accuracy_OLS = np.mean(accuracy_OLS_rounds)
+std_accuracy_OLS = np.std(accuracy_OLS_rounds)
+minvalue_accuracy_OLS = min(accuracy_OLS_rounds)
+maxvalue_accuracy_OLS = max(accuracy_OLS_rounds)
+print(mean_accuracy_OLS, std_accuracy_OLS, minvalue_accuracy_OLS, maxvalue_accuracy_OLS)
 
-    # PRECISÃO
-    accuracy_dmc = accuracy_score(dmc, discriminante2)
-    precisao_dmc.append(accuracy_dmc)
+# Accuracy for Tikhonov
+mean_accuracy_Tikhonov = np.mean(accuracy_Tikhonov_rounds)
+std_accuracy_Tikhonov = np.std(accuracy_Tikhonov_rounds)
+minvalue_accuracy_Tikhonov = min(accuracy_Tikhonov_rounds)
+maxvalue_accuracy_Tikhonov = max(accuracy_Tikhonov_rounds)
+print(mean_accuracy_Tikhonov, std_accuracy_Tikhonov, minvalue_accuracy_Tikhonov, maxvalue_accuracy_Tikhonov)
 
-    # ------------------------------
+# Accuracy for KNN
+mean_accuracy_KNN = np.mean(accuracy_KNN_rounds)
+std_accuracy_KNN = np.std(accuracy_KNN_rounds)
+minvalue_accuracy_KNN = min(accuracy_KNN_rounds)
+maxvalue_accuracy_KNN = max(accuracy_KNN_rounds)
+print(mean_accuracy_KNN, std_accuracy_KNN, minvalue_accuracy_KNN, maxvalue_accuracy_KNN)
 
-print(precisao_mqo_tradicional, precisao_mqo_regularizado, precisao_knn, precisao_dmc)
+# Accuracy for DMC
+mean_accuracy_DMC = np.mean(accuracy_DMC_rounds)
+std_accuracy_DMC = np.std(accuracy_DMC_rounds)
+minvalue_accuracy_DMC = min(accuracy_DMC_rounds)
+maxvalue_accuracy_DMC = max(accuracy_DMC_rounds)
+print(mean_accuracy_DMC, std_accuracy_DMC, minvalue_accuracy_DMC, maxvalue_accuracy_DMC)
 
+# Valores para cada métrica
+means = [mean_accuracy_OLS, mean_accuracy_Tikhonov, mean_accuracy_KNN, mean_accuracy_DMC]
+stds = [std_accuracy_OLS, std_accuracy_Tikhonov, std_accuracy_KNN, std_accuracy_DMC]
+minValues = [minvalue_accuracy_OLS, minvalue_accuracy_Tikhonov, minvalue_accuracy_KNN, minvalue_accuracy_DMC]
+maxValues = [maxvalue_accuracy_OLS, maxvalue_accuracy_Tikhonov, maxvalue_accuracy_KNN, maxvalue_accuracy_DMC]
 
-# Calculate mean and standard deviation of accuracy for each model
-mean_accuracy_mqo_tradicional = np.mean(precisao_mqo_tradicional)
-std_accuracy_mqo_tradicional = np.std(precisao_mqo_tradicional)
+largura_barras = 0.2
 
-# Calculate mean and standard deviation for other models similarly
+models = ['OLS', 'Tikhonov', 'KNN', 'DMC']
 
-print("Mean Accuracy (MQO Tradicional):", mean_accuracy_mqo_tradicional)
-print("Standard Deviation (MQO Tradicional):", std_accuracy_mqo_tradicional)
+# Posições das barras no eixo x
+positions_m1 = np.arange(len(models))
+positions_m2 = [x + largura_barras for x in positions_m1]
+positions_m3 = [x + largura_barras for x in positions_m2]
+positions_m4 = [x + largura_barras for x in positions_m3]
+
+# Criar o gráfico de barras
+plt.bar(positions_m1, means, largura_barras, label='Média')
+plt.bar(positions_m2, stds, largura_barras, label='Desvio Padrão')
+plt.bar(positions_m3, minValues, largura_barras, label='Menor Valor')
+plt.bar(positions_m4, maxValues, largura_barras, label='Maior Valor')
+
+# Adicionar detalhes ao gráfico
+plt.xlabel('Modelos')
+plt.ylabel('Valores')
+plt.title('Comparação das Métricas para os Modelos')
+plt.xticks(positions_m2, models)
+plt.legend()
+
+# Mostrar o gráfico
+plt.tight_layout()
+plt.show()
